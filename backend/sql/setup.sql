@@ -50,8 +50,21 @@ GRANT READ, WRITE ON STAGE raw_docs_stage TO ROLE RAG_INGEST_ROLE;
 GRANT SELECT, INSERT ON TABLE docs_chunks_table TO ROLE RAG_INGEST_ROLE;
 GRANT OPERATE ON CORTEX SEARCH SERVICE docs_search_service TO ROLE RAG_INGEST_ROLE;
 
--- Create the Lambda service user; its PAT and network policy are set up separately
+-- Create the Lambda service user; its PAT is created separately
 CREATE USER IF NOT EXISTS RAG_SVC_USER
   TYPE = SERVICE
   DEFAULT_ROLE = RAG_APP_ROLE;
 GRANT ROLE RAG_APP_ROLE TO USER RAG_SVC_USER;
+
+-- Allow PAT-only logins without a network policy, since Lambda egress IPs are not fixed
+CREATE AUTHENTICATION POLICY IF NOT EXISTS rag_svc_auth_policy
+  AUTHENTICATION_METHODS = ('PROGRAMMATIC_ACCESS_TOKEN')
+  PAT_POLICY = (NETWORK_POLICY_EVALUATION = ENFORCED_NOT_REQUIRED);
+ALTER USER RAG_SVC_USER SET AUTHENTICATION POLICY rag_svc_auth_policy;
+
+-- Create the ingest service user; its PAT is created separately
+CREATE USER IF NOT EXISTS RAG_INGEST_USER
+  TYPE = SERVICE
+  DEFAULT_ROLE = RAG_INGEST_ROLE;
+GRANT ROLE RAG_INGEST_ROLE TO USER RAG_INGEST_USER;
+ALTER USER RAG_INGEST_USER SET AUTHENTICATION POLICY rag_svc_auth_policy;
