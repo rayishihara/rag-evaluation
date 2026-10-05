@@ -1,0 +1,10 @@
+aws_region                  = "us-east-1"
+bedrock_model_id            = "amazon.nova-lite-v1:0"
+snowflake_account           = "myorg-myaccount"
+snowflake_database          = "RAG_DB"
+snowflake_schema            = "RAG_SCHEMA"
+cortex_search_service       = "docs_search_service"
+github_repo                 = "rayishihara/rag-evaluation"
+github_branch               = "main"
+lambda_architecture         = "arm64"
+create_github_oidc_provider = true
