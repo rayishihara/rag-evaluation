@@ -56,6 +56,18 @@ variable "github_repo" {
   default     = "rayishihara/rag-evaluation"
 }
 
+variable "github_owner_id" {
+  description = "Numeric GitHub owner ID in the immutable OIDC subject claim; see gh api repos/<owner>/<repo>/actions/oidc/customization/sub."
+  type        = number
+  default     = 248240394
+}
+
+variable "github_repo_id" {
+  description = "Numeric GitHub repository ID in the immutable OIDC subject claim; see gh api repos/<owner>/<repo>/actions/oidc/customization/sub."
+  type        = number
+  default     = 1404895213
+}
+
 variable "github_branch" {
   description = "Branch allowed to push images; the workflow's branch trigger must match."
   type        = string
