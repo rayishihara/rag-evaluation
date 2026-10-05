@@ -3,20 +3,44 @@
 <head>
 <meta charset="UTF-8">
 <title>rag mock up</title>
+<style>
+  body { font-family: Arial, sans-serif; }
+  #page { width: 800px; margin: 0 auto; }
+  #prompt { width: 100%; height: 200px; }
+  #actions { text-align: right; }
+  #output { white-space: pre-wrap; }
+</style>
 </head>
-<body style="font-family: Arial, sans-serif;">
+<body>
 
-  <div style="width: 800px; margin: 0 auto;">
+  <div id="page">
 
     <h1>Enter text here</h1>
 
-    <textarea style="width: 100%; height: 200px;"></textarea>
+    <textarea id="prompt"></textarea>
 
-    <div style="text-align: right;">
-      <button>Send</button>
+    <div id="actions">
+      <button id="send">Send</button>
     </div>
 
+    <div id="output"></div>
+
   </div>
+
+  <script>
+    document.getElementById("send").onclick = async () => {
+      const output = document.getElementById("output");
+      const response = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: document.getElementById("prompt").value }),
+      });
+      const data = await response.json();
+      output.textContent = response.ok
+        ? data.answer + "\n\nSources: " + data.sources.join(", ")
+        : "Error " + response.status;
+    };
+  </script>
 
 </body>
 </html>
