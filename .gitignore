@@ -9,6 +9,9 @@ wheels/
 # Virtual environments
 .venv
 
+# Environment files
+.env
+
 # Jupyterlab stuff
 .ipynb_checkpoints/
 
