@@ -7,6 +7,7 @@ from typing import Any
 
 import boto3
 import httpx
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
@@ -25,7 +26,7 @@ def _require(name: str) -> str:
 
 # Convert the orgname-accountname identifier to its URL form
 SNOWFLAKE_ACCOUNT = _require("SNOWFLAKE_ACCOUNT").lower().replace("_", "-")
-# Load the PAT from AWS Secrets Manager in production instead of a plain env var
+# Read the Snowflake PAT from the Lambda environment, set by Terraform.
 SNOWFLAKE_PAT = _require("SNOWFLAKE_PAT")
 SNOWFLAKE_DATABASE = _require("SNOWFLAKE_DATABASE")
 SNOWFLAKE_SCHEMA = _require("SNOWFLAKE_SCHEMA")
@@ -49,7 +50,11 @@ SYSTEM_PROMPT = (
 
 NO_RESULTS_ANSWER = "No relevant documents found to answer this question."
 
-bedrock_runtime = boto3.client("bedrock-runtime", region_name=AWS_REGION)
+bedrock_runtime = boto3.client(
+    "bedrock-runtime",
+    region_name=AWS_REGION,
+    config=Config(connect_timeout=5, read_timeout=30, retries={"mode": "standard", "max_attempts": 2}),
+)
 
 app = FastAPI(title="RAG backend")
 
