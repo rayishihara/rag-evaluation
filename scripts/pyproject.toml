@@ -1,15 +1,12 @@
 [project]
-name = "backend"
+name = "scripts"
 version = "0.1.0"
-description = "Add your description here"
+description = "Local dev environment for ingest scripts and JupyterLab"
 requires-python = ">=3.12"
 dependencies = [
     "jupyterlab>=4.6.4",
+    "snowflake-connector-python==4.8.0",
 ]
 
-[project.scripts]
-backend = "backend:main"
-
-[build-system]
-requires = ["uv_build>=0.12.1,<0.13.0"]
-build-backend = "uv_build"
+[tool.uv]
+package = false
