@@ -2,12 +2,14 @@ import asyncio
 import html
 import logging
 import os
+from pathlib import Path
 from typing import Any
 
 import boto3
 import httpx
 from botocore.exceptions import ClientError
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 logging.basicConfig(level=logging.INFO)
@@ -30,6 +32,8 @@ SNOWFLAKE_SCHEMA = _require("SNOWFLAKE_SCHEMA")
 CORTEX_SEARCH_SERVICE = os.environ.get("CORTEX_SEARCH_SERVICE") or "docs_search_service"
 BEDROCK_MODEL_ID = _require("BEDROCK_MODEL_ID")
 AWS_REGION = _require("AWS_REGION")
+# Default to the repo layout for local runs; the image overrides this
+FRONTEND_INDEX = Path(os.environ.get("FRONTEND_INDEX") or Path(__file__).parents[2] / "frontend" / "index.html")
 
 SEARCH_URL = (
     f"https://{SNOWFLAKE_ACCOUNT}.snowflakecomputing.com/api/v2/databases/{SNOWFLAKE_DATABASE}"
@@ -92,6 +96,11 @@ def generate_answer(user_message: str) -> str:
         inferenceConfig={"maxTokens": 1024, "temperature": 0},
     )
     return response["output"]["message"]["content"][0]["text"]
+
+
+@app.get("/", include_in_schema=False)
+async def index() -> FileResponse:
+    return FileResponse(FRONTEND_INDEX)
 
 
 @app.get("/health")
