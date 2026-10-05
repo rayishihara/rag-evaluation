@@ -1,12 +1,11 @@
 resource "aws_lambda_function" "backend" {
-  function_name                  = "rag-backend"
-  role                           = aws_iam_role.lambda_exec.arn
-  package_type                   = "Image"
-  image_uri                      = local.image_uri
-  architectures                  = [var.lambda_architecture]
-  memory_size                    = 1024
-  timeout                        = 120
-  reserved_concurrent_executions = 1
+  function_name = "rag-backend"
+  role          = aws_iam_role.lambda_exec.arn
+  package_type  = "Image"
+  image_uri     = local.image_uri
+  architectures = [var.lambda_architecture]
+  memory_size   = 1024
+  timeout       = 120
 
   environment {
     variables = {
