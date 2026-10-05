@@ -11,3 +11,6 @@ wheels/
 
 # Jupyterlab stuff
 .ipynb_checkpoints/
+
+# Extra stuff
+docs/
