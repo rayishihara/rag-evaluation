@@ -4,12 +4,12 @@ variable "aws_region" {
 }
 
 variable "bedrock_model_id" {
-  description = "Plain Bedrock foundation model ID, e.g. amazon.nova-lite-v1:0."
+  description = "Bedrock cross-region inference profile ID, e.g. apac.amazon.nova-lite-v1:0."
   type        = string
 
   validation {
-    condition     = !can(regex("^(us|us-gov|eu|apac|jp|au|ca|global)\\.", var.bedrock_model_id))
-    error_message = "Only plain foundation model IDs are supported, not inference profile IDs."
+    condition     = can(regex("^(us|us-gov|eu|apac|jp|au|ca|global)\\.", var.bedrock_model_id))
+    error_message = "Only inference profile IDs are supported, not plain foundation model IDs."
   }
 }
 

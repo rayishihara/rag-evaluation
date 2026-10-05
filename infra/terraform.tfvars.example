@@ -1,5 +1,5 @@
 aws_region                  = "us-east-1"
-bedrock_model_id            = "amazon.nova-lite-v1:0"
+bedrock_model_id            = "us.amazon.nova-lite-v1:0"
 snowflake_account           = "myorg-myaccount"
 snowflake_database          = "RAG_DB"
 snowflake_schema            = "RAG_SCHEMA"
