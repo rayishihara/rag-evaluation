@@ -1,0 +1,57 @@
+-- Run once as ACCOUNTADMIN (or a role that can create databases, warehouses, roles and users)
+USE ROLE ACCOUNTADMIN;
+
+CREATE DATABASE IF NOT EXISTS RAG_DB;
+CREATE SCHEMA IF NOT EXISTS RAG_DB.RAG_SCHEMA;
+USE SCHEMA RAG_DB.RAG_SCHEMA;
+
+CREATE WAREHOUSE IF NOT EXISTS RAG_WH
+  WAREHOUSE_SIZE = 'XSMALL'
+  AUTO_SUSPEND = 60
+  AUTO_RESUME = TRUE
+  INITIALLY_SUSPENDED = TRUE;
+USE WAREHOUSE RAG_WH;
+
+-- Enable the directory table and server-side encryption, both required by PARSE_DOCUMENT
+CREATE STAGE IF NOT EXISTS raw_docs_stage
+  DIRECTORY = (ENABLE = TRUE)
+  ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE');
+
+CREATE TABLE IF NOT EXISTS docs_chunks_table (
+  file_name VARCHAR,
+  chunk VARCHAR,
+  chunk_index INTEGER,
+  ingested_at TIMESTAMP_LTZ DEFAULT CURRENT_TIMESTAMP()
+);
+
+-- WARNING: rerunning this statement drops and rebuilds the whole search index
+CREATE OR REPLACE CORTEX SEARCH SERVICE docs_search_service
+  ON chunk
+  ATTRIBUTES file_name
+  WAREHOUSE = RAG_WH
+  TARGET_LAG = '1 hour'
+  AS (
+    SELECT chunk, file_name, chunk_index
+    FROM docs_chunks_table
+  );
+
+-- Grant the read-only app role only enough to query the search service
+CREATE ROLE IF NOT EXISTS RAG_APP_ROLE;
+GRANT USAGE ON DATABASE RAG_DB TO ROLE RAG_APP_ROLE;
+GRANT USAGE ON SCHEMA RAG_DB.RAG_SCHEMA TO ROLE RAG_APP_ROLE;
+GRANT USAGE ON CORTEX SEARCH SERVICE docs_search_service TO ROLE RAG_APP_ROLE;
+
+-- Grant the ingest role stage/table writes and search refresh (Cortex functions rely on SNOWFLAKE.CORTEX_USER, granted to PUBLIC by default)
+CREATE ROLE IF NOT EXISTS RAG_INGEST_ROLE;
+GRANT USAGE ON DATABASE RAG_DB TO ROLE RAG_INGEST_ROLE;
+GRANT USAGE ON SCHEMA RAG_DB.RAG_SCHEMA TO ROLE RAG_INGEST_ROLE;
+GRANT USAGE ON WAREHOUSE RAG_WH TO ROLE RAG_INGEST_ROLE;
+GRANT READ, WRITE ON STAGE raw_docs_stage TO ROLE RAG_INGEST_ROLE;
+GRANT SELECT, INSERT ON TABLE docs_chunks_table TO ROLE RAG_INGEST_ROLE;
+GRANT OPERATE ON CORTEX SEARCH SERVICE docs_search_service TO ROLE RAG_INGEST_ROLE;
+
+-- Create the Lambda service user; its PAT and network policy are set up separately
+CREATE USER IF NOT EXISTS RAG_SVC_USER
+  TYPE = SERVICE
+  DEFAULT_ROLE = RAG_APP_ROLE;
+GRANT ROLE RAG_APP_ROLE TO USER RAG_SVC_USER;
