@@ -26,19 +26,3 @@ resource "aws_lambda_function_url" "backend" {
   function_name      = aws_lambda_function.backend.function_name
   authorization_type = "NONE"
 }
-
-resource "aws_lambda_permission" "url_invoke_function_url" {
-  statement_id           = "FunctionURLAllowPublicAccess"
-  action                 = "lambda:InvokeFunctionUrl"
-  function_name          = aws_lambda_function.backend.function_name
-  principal              = "*"
-  function_url_auth_type = "NONE"
-}
-
-resource "aws_lambda_permission" "url_invoke_function" {
-  statement_id             = "FunctionURLInvokeAllowPublicAccess"
-  action                   = "lambda:InvokeFunction"
-  function_name            = aws_lambda_function.backend.function_name
-  principal                = "*"
-  invoked_via_function_url = true
-}
