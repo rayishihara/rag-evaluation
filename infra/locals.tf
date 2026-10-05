@@ -11,4 +11,6 @@ locals {
   github_oidc_sub   = "repo:${var.github_repo}:ref:refs/heads/${var.github_branch}"
 
   image_uri = "${aws_ecr_repository.backend.repository_url}:${var.image_tag}"
+
+  github_oidc_provider_arn = var.create_github_oidc_provider ? aws_iam_openid_connect_provider.github[0].arn : data.aws_iam_openid_connect_provider.github[0].arn
 }
