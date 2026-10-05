@@ -1,0 +1,56 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - ".github/workflows/build.yml"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-push:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_PUSH_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v4
+
+      - id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: backend
+          build-contexts: frontend=frontend
+          platforms: linux/arm64
+          push: true
+          provenance: false
+          sbom: false
+          tags: ${{ steps.ecr.outputs.registry }}/rag-backend:${{ github.sha }}
+
+      - name: Write job summary
+        env:
+          SHA: ${{ github.sha }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          {
+            echo "SHA: \`$SHA\`"
+            echo
+            echo "Digest: \`$DIGEST\`"
+            echo
+            echo "Deploy from \`infra/\`:"
+            echo
+            echo '```'
+            echo "terraform apply -var image_tag=$SHA"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
