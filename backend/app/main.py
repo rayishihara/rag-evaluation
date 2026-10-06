@@ -1,4 +1,5 @@
 import html
+import json
 import logging
 import os
 from pathlib import Path
@@ -26,6 +27,7 @@ SNOWFLAKE_ACCOUNT = _require("SNOWFLAKE_ACCOUNT").lower().replace("_", "-")
 SNOWFLAKE_PAT = _require("SNOWFLAKE_PAT")
 SNOWFLAKE_DATABASE = _require("SNOWFLAKE_DATABASE")
 SNOWFLAKE_SCHEMA = _require("SNOWFLAKE_SCHEMA")
+SNOWFLAKE_WAREHOUSE = _require("SNOWFLAKE_WAREHOUSE")
 CORTEX_SEARCH_SERVICE = os.environ.get("CORTEX_SEARCH_SERVICE") or "docs_search_service"
 CORTEX_MODEL = _require("CORTEX_MODEL")
 # Default to the repo layout for local runs; the image overrides this
@@ -35,7 +37,12 @@ SEARCH_URL = (
     f"https://{SNOWFLAKE_ACCOUNT}.snowflakecomputing.com/api/v2/databases/{SNOWFLAKE_DATABASE}"
     f"/schemas/{SNOWFLAKE_SCHEMA}/cortex-search-services/{CORTEX_SEARCH_SERVICE}:query"
 )
-COMPLETE_URL = f"https://{SNOWFLAKE_ACCOUNT}.snowflakecomputing.com/api/v2/cortex/v1/chat/completions"
+STATEMENTS_URL = f"https://{SNOWFLAKE_ACCOUNT}.snowflakecomputing.com/api/v2/statements"
+# Call COMPLETE via SQL since the Cortex REST endpoints are not enabled for this account
+COMPLETE_SQL = (
+    "SELECT SNOWFLAKE.CORTEX.COMPLETE(?, [{'role': 'system', 'content': ?}, {'role': 'user', 'content': ?}], "
+    "{'temperature': 0, 'max_tokens': 1024})"
+)
 
 SNOWFLAKE_HEADERS = {
     "Authorization": f"Bearer {SNOWFLAKE_PAT}",
@@ -86,18 +93,19 @@ def build_user_message(prompt: str, chunks: list[dict[str, Any]]) -> str:
 
 async def generate_answer(user_message: str) -> str:
     body = {
-        "model": CORTEX_MODEL,
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_message},
-        ],
-        "max_completion_tokens": 1024,
-        "temperature": 0,
+        "statement": COMPLETE_SQL,
+        "bindings": {
+            "1": {"type": "TEXT", "value": CORTEX_MODEL},
+            "2": {"type": "TEXT", "value": SYSTEM_PROMPT},
+            "3": {"type": "TEXT", "value": user_message},
+        },
+        "warehouse": SNOWFLAKE_WAREHOUSE,
+        "timeout": 30,
     }
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.post(COMPLETE_URL, headers=SNOWFLAKE_HEADERS, json=body)
+    async with httpx.AsyncClient(timeout=40.0) as client:
+        response = await client.post(STATEMENTS_URL, headers=SNOWFLAKE_HEADERS, json=body)
         response.raise_for_status()
-    return response.json()["choices"][0]["message"]["content"]
+    return json.loads(response.json()["data"][0][0])["choices"][0]["messages"]
 
 
 @app.get("/", include_in_schema=False)

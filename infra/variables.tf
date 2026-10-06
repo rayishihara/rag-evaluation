@@ -18,6 +18,11 @@ variable "snowflake_schema" {
   type        = string
 }
 
+variable "snowflake_warehouse" {
+  description = "Snowflake warehouse that runs the Cortex COMPLETE query."
+  type        = string
+}
+
 variable "cortex_search_service" {
   description = "Cortex Search service name."
   type        = string

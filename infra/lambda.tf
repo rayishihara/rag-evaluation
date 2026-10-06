@@ -13,6 +13,7 @@ resource "aws_lambda_function" "backend" {
       SNOWFLAKE_PAT         = var.snowflake_pat
       SNOWFLAKE_DATABASE    = var.snowflake_database
       SNOWFLAKE_SCHEMA      = var.snowflake_schema
+      SNOWFLAKE_WAREHOUSE   = var.snowflake_warehouse
       CORTEX_SEARCH_SERVICE = var.cortex_search_service
       CORTEX_MODEL          = var.cortex_model
     }
