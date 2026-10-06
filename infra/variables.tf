@@ -3,14 +3,9 @@ variable "aws_region" {
   type        = string
 }
 
-variable "bedrock_model_id" {
-  description = "Bedrock cross-region inference profile ID, e.g. apac.amazon.nova-lite-v1:0."
+variable "hf_model" {
+  description = "Hugging Face model ID for answer generation, e.g. meta-llama/Llama-3.1-70B-Instruct."
   type        = string
-
-  validation {
-    condition     = can(regex("^(us|us-gov|eu|apac|jp|au|ca|global)\\.", var.bedrock_model_id))
-    error_message = "Only inference profile IDs are supported, not plain foundation model IDs."
-  }
 }
 
 variable "snowflake_account" {
@@ -36,6 +31,12 @@ variable "cortex_search_service" {
 
 variable "snowflake_pat" {
   description = "Snowflake programmatic access token; supply only via TF_VAR_snowflake_pat."
+  type        = string
+  sensitive   = true
+}
+
+variable "hf_token" {
+  description = "Hugging Face token with Inference Providers permission; supply only via TF_VAR_hf_token."
   type        = string
   sensitive   = true
 }
