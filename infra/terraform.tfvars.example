@@ -1,10 +1,9 @@
 aws_region                  = "us-east-1"
+bedrock_model_id            = "us.amazon.nova-lite-v1:0"
 snowflake_account           = "myorg-myaccount"
 snowflake_database          = "RAG_DB"
 snowflake_schema            = "RAG_SCHEMA"
-snowflake_warehouse         = "RAG_WH"
 cortex_search_service       = "docs_search_service"
-cortex_model                = "llama3.1-70b"
 github_repo                 = "rayishihara/rag-evaluation"
 github_owner_id             = 248240394
 github_repo_id              = 1404895213
