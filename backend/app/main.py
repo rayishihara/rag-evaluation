@@ -1,14 +1,10 @@
-import asyncio
 import html
 import logging
 import os
 from pathlib import Path
 from typing import Any
 
-import boto3
 import httpx
-from botocore.config import Config
-from botocore.exceptions import ClientError
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -31,8 +27,7 @@ SNOWFLAKE_PAT = _require("SNOWFLAKE_PAT")
 SNOWFLAKE_DATABASE = _require("SNOWFLAKE_DATABASE")
 SNOWFLAKE_SCHEMA = _require("SNOWFLAKE_SCHEMA")
 CORTEX_SEARCH_SERVICE = os.environ.get("CORTEX_SEARCH_SERVICE") or "docs_search_service"
-BEDROCK_MODEL_ID = _require("BEDROCK_MODEL_ID")
-AWS_REGION = _require("AWS_REGION")
+CORTEX_MODEL = _require("CORTEX_MODEL")
 # Default to the repo layout for local runs; the image overrides this
 FRONTEND_INDEX = Path(os.environ.get("FRONTEND_INDEX") or Path(__file__).parents[2] / "frontend" / "index.html")
 
@@ -40,6 +35,14 @@ SEARCH_URL = (
     f"https://{SNOWFLAKE_ACCOUNT}.snowflakecomputing.com/api/v2/databases/{SNOWFLAKE_DATABASE}"
     f"/schemas/{SNOWFLAKE_SCHEMA}/cortex-search-services/{CORTEX_SEARCH_SERVICE}:query"
 )
+COMPLETE_URL = f"https://{SNOWFLAKE_ACCOUNT}.snowflakecomputing.com/api/v2/cortex/v1/chat/completions"
+
+SNOWFLAKE_HEADERS = {
+    "Authorization": f"Bearer {SNOWFLAKE_PAT}",
+    "X-Snowflake-Authorization-Token-Type": "PROGRAMMATIC_ACCESS_TOKEN",
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+}
 
 SYSTEM_PROMPT = (
     "You are a question-answering assistant. Answer the user's question using only the information "
@@ -49,12 +52,6 @@ SYSTEM_PROMPT = (
 )
 
 NO_RESULTS_ANSWER = "No relevant documents found to answer this question."
-
-bedrock_runtime = boto3.client(
-    "bedrock-runtime",
-    region_name=AWS_REGION,
-    config=Config(connect_timeout=5, read_timeout=30, retries={"mode": "standard", "max_attempts": 2}),
-)
 
 app = FastAPI(title="RAG backend")
 
@@ -69,15 +66,9 @@ class ChatResponse(BaseModel):
 
 
 async def search_chunks(prompt: str) -> list[dict[str, Any]]:
-    headers = {
-        "Authorization": f"Bearer {SNOWFLAKE_PAT}",
-        "X-Snowflake-Authorization-Token-Type": "PROGRAMMATIC_ACCESS_TOKEN",
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-    }
     body = {"query": prompt, "columns": ["chunk", "file_name"], "limit": 3}
     async with httpx.AsyncClient(timeout=10.0) as client:
-        response = await client.post(SEARCH_URL, headers=headers, json=body)
+        response = await client.post(SEARCH_URL, headers=SNOWFLAKE_HEADERS, json=body)
         response.raise_for_status()
     return response.json()["results"]
 
@@ -93,14 +84,20 @@ def build_user_message(prompt: str, chunks: list[dict[str, Any]]) -> str:
     return "\n\n".join(documents) + f"\n\nQuestion: {prompt}"
 
 
-def generate_answer(user_message: str) -> str:
-    response = bedrock_runtime.converse(
-        modelId=BEDROCK_MODEL_ID,
-        system=[{"text": SYSTEM_PROMPT}],
-        messages=[{"role": "user", "content": [{"text": user_message}]}],
-        inferenceConfig={"maxTokens": 1024, "temperature": 0},
-    )
-    return response["output"]["message"]["content"][0]["text"]
+async def generate_answer(user_message: str) -> str:
+    body = {
+        "model": CORTEX_MODEL,
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": user_message},
+        ],
+        "max_completion_tokens": 1024,
+        "temperature": 0,
+    }
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.post(COMPLETE_URL, headers=SNOWFLAKE_HEADERS, json=body)
+        response.raise_for_status()
+    return response.json()["choices"][0]["message"]["content"]
 
 
 @app.get("/", include_in_schema=False)
@@ -129,9 +126,12 @@ async def chat(request: ChatRequest) -> ChatResponse:
         return ChatResponse(answer=NO_RESULTS_ANSWER, sources=[])
 
     try:
-        answer = await asyncio.to_thread(generate_answer, build_user_message(request.prompt, chunks))
-    except ClientError as exc:
-        logger.error("Bedrock converse failed: %s", exc.response.get("Error", {}).get("Code", "Unknown"))
+        answer = await generate_answer(build_user_message(request.prompt, chunks))
+    except httpx.HTTPStatusError as exc:
+        logger.error("Cortex Complete returned HTTP %s: %s", exc.response.status_code, exc.response.text[:500])
+        raise HTTPException(status_code=502, detail="Generation failed") from exc
+    except httpx.HTTPError as exc:
+        logger.error("Cortex Complete request failed: %s", type(exc).__name__)
         raise HTTPException(status_code=502, detail="Generation failed") from exc
 
     sources = list(dict.fromkeys(str(c["file_name"]) for c in chunks if c.get("file_name")))

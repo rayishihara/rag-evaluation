@@ -3,16 +3,6 @@ variable "aws_region" {
   type        = string
 }
 
-variable "bedrock_model_id" {
-  description = "Bedrock cross-region inference profile ID, e.g. apac.amazon.nova-lite-v1:0."
-  type        = string
-
-  validation {
-    condition     = can(regex("^(us|us-gov|eu|apac|jp|au|ca|global)\\.", var.bedrock_model_id))
-    error_message = "Only inference profile IDs are supported, not plain foundation model IDs."
-  }
-}
-
 variable "snowflake_account" {
   description = "Snowflake account identifier in orgname-accountname form."
   type        = string
@@ -32,6 +22,11 @@ variable "cortex_search_service" {
   description = "Cortex Search service name."
   type        = string
   default     = "docs_search_service"
+}
+
+variable "cortex_model" {
+  description = "Snowflake Cortex model for answer generation, e.g. llama3.1-70b."
+  type        = string
 }
 
 variable "snowflake_pat" {
