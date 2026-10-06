@@ -4,7 +4,7 @@ variable "aws_region" {
 }
 
 variable "hf_model" {
-  description = "Hugging Face model ID for answer generation, e.g. meta-llama/Llama-3.1-70B-Instruct."
+  description = "Hugging Face model ID for answer generation, e.g. Qwen/Qwen2.5-72B-Instruct."
   type        = string
 }
 
