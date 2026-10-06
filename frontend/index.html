@@ -30,6 +30,7 @@
   <script>
     document.getElementById("send").onclick = async () => {
       const output = document.getElementById("output");
+      output.textContent = "";
       const response = await fetch("/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
