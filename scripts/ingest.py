@@ -26,17 +26,17 @@ def connect() -> snowflake.connector.SnowflakeConnection:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Upload PDFs to Snowflake and chunk them for Cortex Search.")
-    parser.add_argument("pdf_dir", type=Path, help="Local directory containing PDF files (non-recursive)")
+    parser = argparse.ArgumentParser(description="Upload PDF/HTML documents to Snowflake and chunk them for Cortex Search.")
+    parser.add_argument("pdf_dir", type=Path, help="Local directory containing PDF or HTML files (non-recursive)")
     args = parser.parse_args()
 
     pdf_dir: Path = args.pdf_dir.resolve()
     if not pdf_dir.is_dir():
         print(f"Not a directory: {pdf_dir}", file=sys.stderr)
         return 1
-    pdfs = sorted(p for p in pdf_dir.iterdir() if p.is_file() and p.suffix.lower() == ".pdf")
+    pdfs = sorted(p for p in pdf_dir.iterdir() if p.is_file() and p.suffix.lower() in {".pdf", ".html", ".htm"})
     if not pdfs:
-        print(f"No PDF files found in {pdf_dir}", file=sys.stderr)
+        print(f"No PDF or HTML files found in {pdf_dir}", file=sys.stderr)
         return 1
 
     conn = None
