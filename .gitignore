@@ -18,7 +18,7 @@ wheels/
 # Extra stuff
 docs/
 # Terraform
-infra/.terraform/
+app/infra/.terraform/
 *.tfstate
 *.tfstate.*
 *.tfvars

@@ -4,8 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - "backend/**"
-      - "frontend/**"
+      - "app/backend/**"
+      - "app/frontend/**"
       - ".github/workflows/build.yml"
   workflow_dispatch:
 
@@ -32,8 +32,8 @@ jobs:
       - id: build
         uses: docker/build-push-action@v7
         with:
-          context: backend
-          build-contexts: frontend=frontend
+          context: app/backend
+          build-contexts: frontend=app/frontend
           platforms: linux/arm64
           push: true
           provenance: false
@@ -50,7 +50,7 @@ jobs:
             echo
             echo "Digest: \`$DIGEST\`"
             echo
-            echo "Deploy from \`infra/\`:"
+            echo "Deploy from \`app/infra/\`:"
             echo
             echo '```'
             echo "terraform apply -var image_tag=$SHA"

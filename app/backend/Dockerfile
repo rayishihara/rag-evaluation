@@ -1,4 +1,4 @@
-# Build from repo root: docker build --build-context frontend=frontend backend/
+# Build from repo root: docker build --build-context frontend=app/frontend app/backend/
 FROM public.ecr.aws/docker/library/python:3.12-slim
 
 COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:1.1.0 /lambda-adapter /opt/extensions/lambda-adapter
