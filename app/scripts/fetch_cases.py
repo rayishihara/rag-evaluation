@@ -4,6 +4,8 @@ import json
 import os
 import re
 import sys
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -14,8 +16,15 @@ TEXT_FIELDS = ["html_with_citations", "html", "html_lawbox", "html_columbia", "x
 
 def get(url: str, token: str) -> dict:
     req = urllib.request.Request(url, headers={"Authorization": f"Token {token}"})
-    with urllib.request.urlopen(req, timeout=60) as resp:
-        return json.load(resp)
+    for attempt in range(6):
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                return json.load(resp)
+        except urllib.error.HTTPError as exc:
+            if exc.code != 429 or attempt == 5:
+                raise
+            # Back off on rate limiting, honoring Retry-After when present
+            time.sleep(int(exc.headers.get("Retry-After") or 2 ** (attempt + 1)))
 
 
 def search(query: str, court: str, limit: int, token: str) -> list[dict]:
