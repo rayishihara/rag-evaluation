@@ -3,7 +3,8 @@ from statistics import mean
 
 from rag_eval import target, tracking
 from rag_eval.dataset import Sample
-from rag_eval.metrics.retrieval import context_precision, context_recall
+from rag_eval.metrics.operational import latency
+from rag_eval.metrics.retrieval import context_precision, context_recall, reciprocal_rank
 
 
 def run(samples: list[Sample], base_url: str, dataset: Path, run_name: str | None) -> None:
@@ -19,11 +20,15 @@ def run(samples: list[Sample], base_url: str, dataset: Path, run_name: str | Non
                 "relevant": ", ".join(sample.relevant_chunks),
                 "precision": context_precision(trace, sample),
                 "recall": context_recall(trace, sample),
+                "rr": reciprocal_rank(trace, sample),
+                "latency": latency(trace),
             })
-            print(f"{sample.id}\tprecision={rows[-1]['precision']:.2f}\trecall={rows[-1]['recall']:.2f}")
+            print(f"{sample.id}\tprecision={rows[-1]['precision']:.2f}\trecall={rows[-1]['recall']:.2f}\trr={rows[-1]['rr']:.2f}\tlatency={rows[-1]['latency']:.2f}s")
         metrics = {
             "context_precision": mean(r["precision"] for r in rows),
             "context_recall": mean(r["recall"] for r in rows),
+            "mrr": mean(r["rr"] for r in rows),
+            "mean_latency": mean(r["latency"] for r in rows),
         }
-        print(f"mean\tprecision={metrics['context_precision']:.2f}\trecall={metrics['context_recall']:.2f}")
+        print(f"mean\tprecision={metrics['context_precision']:.2f}\trecall={metrics['context_recall']:.2f}\tmrr={metrics['mrr']:.2f}\tlatency={metrics['mean_latency']:.2f}s")
         tracking.log_results(metrics, rows)
