@@ -16,6 +16,7 @@ def run(samples: list[Sample], base_url: str, dataset: Path, run_name: str | Non
             rows.append({
                 "id": sample.id,
                 "question": sample.question,
+                "answer": trace.answer,
                 "retrieved": ", ".join(trace.chunk_ids),
                 "relevant": ", ".join(sample.relevant_chunks),
                 "precision": context_precision(trace, sample),
