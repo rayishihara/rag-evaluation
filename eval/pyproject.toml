@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
     "httpx>=0.28",
     "mlflow>=3",
+    "ragas==0.4.3",
 ]
 
 [tool.uv]
