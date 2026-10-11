@@ -5,6 +5,7 @@ description = "Evaluation pipeline for the RAG app"
 requires-python = ">=3.12"
 dependencies = [
     "httpx>=0.28",
+    "langchain-community<0.4.2",  # Keep the vertexai module that ragas 0.4.3 imports
     "mlflow>=3",
     "ragas==0.4.3",
 ]
