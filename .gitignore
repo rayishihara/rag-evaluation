@@ -22,3 +22,7 @@ app/infra/.terraform/
 *.tfstate
 *.tfstate.*
 *.tfvars
+
+# MLflow local tracking store
+eval/mlflow.db
+eval/mlruns/
