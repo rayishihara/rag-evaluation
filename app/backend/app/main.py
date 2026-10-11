@@ -27,8 +27,8 @@ SNOWFLAKE_PAT = _require("SNOWFLAKE_PAT")
 SNOWFLAKE_DATABASE = _require("SNOWFLAKE_DATABASE")
 SNOWFLAKE_SCHEMA = _require("SNOWFLAKE_SCHEMA")
 CORTEX_SEARCH_SERVICE = os.environ.get("CORTEX_SEARCH_SERVICE") or "docs_search_service"
-HF_TOKEN = _require("HF_TOKEN")
-HF_MODEL = _require("HF_MODEL")
+GEMINI_API_KEY = _require("GEMINI_API_KEY")
+GEMINI_MODEL = _require("GEMINI_MODEL")
 # Default to the repo layout for local runs; the image overrides this
 FRONTEND_INDEX = Path(os.environ.get("FRONTEND_INDEX") or Path(__file__).parents[2] / "frontend" / "index.html")
 
@@ -36,7 +36,7 @@ SEARCH_URL = (
     f"https://{SNOWFLAKE_ACCOUNT}.snowflakecomputing.com/api/v2/databases/{SNOWFLAKE_DATABASE}"
     f"/schemas/{SNOWFLAKE_SCHEMA}/cortex-search-services/{CORTEX_SEARCH_SERVICE}:query"
 )
-HF_CHAT_URL = "https://router.huggingface.co/v1/chat/completions"
+GEMINI_CHAT_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 
 SYSTEM_PROMPT = (
     "You are a question-answering assistant. Answer the user's question using only the information "
@@ -92,9 +92,9 @@ def build_user_message(prompt: str, chunks: list[dict[str, Any]]) -> str:
 
 
 async def generate_answer(user_message: str) -> str:
-    headers = {"Authorization": f"Bearer {HF_TOKEN}", "Content-Type": "application/json"}
+    headers = {"Authorization": f"Bearer {GEMINI_API_KEY}", "Content-Type": "application/json"}
     body = {
-        "model": HF_MODEL,
+        "model": GEMINI_MODEL,
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_message},
@@ -103,7 +103,7 @@ async def generate_answer(user_message: str) -> str:
         "temperature": 0,
     }
     async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.post(HF_CHAT_URL, headers=headers, json=body)
+        response = await client.post(GEMINI_CHAT_URL, headers=headers, json=body)
         response.raise_for_status()
     return response.json()["choices"][0]["message"]["content"]
 
@@ -136,10 +136,10 @@ async def chat(request: ChatRequest) -> ChatResponse:
     try:
         answer = await generate_answer(build_user_message(request.prompt, chunks))
     except httpx.HTTPStatusError as exc:
-        logger.error("Hugging Face returned HTTP %s: %s", exc.response.status_code, exc.response.text[:500])
+        logger.error("Gemini returned HTTP %s: %s", exc.response.status_code, exc.response.text[:500])
         raise HTTPException(status_code=502, detail="Generation failed") from exc
     except httpx.HTTPError as exc:
-        logger.error("Hugging Face request failed: %s", type(exc).__name__)
+        logger.error("Gemini request failed: %s", type(exc).__name__)
         raise HTTPException(status_code=502, detail="Generation failed") from exc
 
     sources = list(dict.fromkeys(str(c["file_name"]) for c in chunks if c.get("file_name")))

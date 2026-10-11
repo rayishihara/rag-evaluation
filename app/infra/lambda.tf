@@ -13,8 +13,8 @@ resource "aws_lambda_function" "backend" {
       SNOWFLAKE_PAT         = var.snowflake_pat
       SNOWFLAKE_DATABASE    = var.snowflake_database
       SNOWFLAKE_SCHEMA      = var.snowflake_schema
-      HF_MODEL              = var.hf_model
-      HF_TOKEN              = var.hf_token
+      GEMINI_MODEL          = var.gemini_model
+      GEMINI_API_KEY        = var.gemini_api_key
       CORTEX_SEARCH_SERVICE = var.cortex_search_service
     }
   }

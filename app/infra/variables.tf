@@ -3,8 +3,8 @@ variable "aws_region" {
   type        = string
 }
 
-variable "hf_model" {
-  description = "Hugging Face model ID for answer generation, e.g. Qwen/Qwen2.5-72B-Instruct."
+variable "gemini_model" {
+  description = "Gemini model ID for answer generation, e.g. gemini-2.5-flash."
   type        = string
 }
 
@@ -35,8 +35,8 @@ variable "snowflake_pat" {
   sensitive   = true
 }
 
-variable "hf_token" {
-  description = "Hugging Face token with Inference Providers permission; supply only via TF_VAR_hf_token."
+variable "gemini_api_key" {
+  description = "Gemini API key from Google AI Studio; supply only via TF_VAR_gemini_api_key."
   type        = string
   sensitive   = true
 }
