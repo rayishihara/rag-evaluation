@@ -54,9 +54,16 @@ class ChatRequest(BaseModel):
     prompt: str = Field(min_length=1, max_length=2000)
 
 
+class Chunk(BaseModel):
+    file_name: str
+    chunk_index: int
+    chunk: str
+
+
 class ChatResponse(BaseModel):
     answer: str
     sources: list[str]
+    chunks: list[Chunk] = []
 
 
 async def search_chunks(prompt: str) -> list[dict[str, Any]]:
@@ -66,7 +73,7 @@ async def search_chunks(prompt: str) -> list[dict[str, Any]]:
         "Content-Type": "application/json",
         "Accept": "application/json",
     }
-    body = {"query": prompt, "columns": ["chunk", "file_name"], "limit": 3}
+    body = {"query": prompt, "columns": ["chunk", "file_name", "chunk_index"], "limit": 3}
     async with httpx.AsyncClient(timeout=10.0) as client:
         response = await client.post(SEARCH_URL, headers=headers, json=body)
         response.raise_for_status()
@@ -136,4 +143,4 @@ async def chat(request: ChatRequest) -> ChatResponse:
         raise HTTPException(status_code=502, detail="Generation failed") from exc
 
     sources = list(dict.fromkeys(str(c["file_name"]) for c in chunks if c.get("file_name")))
-    return ChatResponse(answer=answer, sources=sources)
+    return ChatResponse(answer=answer, sources=sources, chunks=[Chunk(**c) for c in chunks])
