@@ -49,3 +49,7 @@ For generation metrics:
 - faithfulness
 - answer relevance
 - answer correctness
+
+## RAG working snapshot
+
+<img src="./assets/rag-working-example.png" alt="RAG working!" width="600">
