@@ -4,7 +4,7 @@ variable "aws_region" {
 }
 
 variable "gemini_model" {
-  description = "Gemini model ID for answer generation, e.g. gemini-3.8-flash."
+  description = "Gemini model ID for answer generation, e.g. gemini-3.5-flash-lite."
   type        = string
 }
 
