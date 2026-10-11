@@ -14,5 +14,6 @@ def query(base_url: str, question: str) -> Trace:
     return Trace(
         answer=body["answer"],
         chunk_ids=[f"{c['file_name']}#{c['chunk_index']}" for c in body["chunks"]],
+        chunks=[c["chunk"] for c in body["chunks"]],
         latency=latency,
     )
