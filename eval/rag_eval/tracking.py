@@ -10,7 +10,12 @@ EVAL_DIR = Path(__file__).resolve().parents[1]
 def start_run(experiment: str, run_name: str | None, params: dict) -> mlflow.ActiveRun:
     mlflow.set_tracking_uri(f"sqlite:///{EVAL_DIR / 'mlflow.db'}")
     if mlflow.get_experiment_by_name(experiment) is None:
-        mlflow.create_experiment(experiment, artifact_location=(EVAL_DIR / "mlruns").as_uri())
+        # Tag as classic so the UI shows the runs and compare views instead of traces
+        mlflow.create_experiment(
+            experiment,
+            artifact_location=(EVAL_DIR / "mlruns").as_uri(),
+            tags={"mlflow.experimentKind": "custom_model_development"},
+        )
     mlflow.set_experiment(experiment)
     run = mlflow.start_run(run_name=run_name)
     git_sha = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=EVAL_DIR).stdout.strip()
