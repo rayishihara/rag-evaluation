@@ -10,6 +10,7 @@ parser = argparse.ArgumentParser(description="Run an evaluation experiment again
 parser.add_argument("--experiment", choices=EXPERIMENTS, default="reliability")
 parser.add_argument("--base-url", required=True)
 parser.add_argument("--dataset", type=Path, default=Path(__file__).parent / "datasets" / "golden.jsonl")
+parser.add_argument("--run-name", help="Label for this run in MLflow, e.g. what changed since the last run")
 args = parser.parse_args()
 
-EXPERIMENTS[args.experiment](load(args.dataset), args.base_url.rstrip("/"))
+EXPERIMENTS[args.experiment](load(args.dataset), args.base_url.rstrip("/"), args.dataset, args.run_name)
