@@ -1,4 +1,5 @@
 import os
+import time
 from math import isnan
 from pathlib import Path
 from statistics import mean
@@ -20,7 +21,10 @@ def run(samples: list[Sample], base_url: str, dataset: Path, run_name: str | Non
     }
     with tracking.start_run("reliability", run_name, params):
         rows = []
-        for sample in samples:
+        for i, sample in enumerate(samples):
+            # Pause between queries to stay under the judge's free tier limit of 15 requests per minute
+            if i:
+                time.sleep(60)
             trace = target.query(base_url, sample.question)
             rows.append({
                 "id": sample.id,
