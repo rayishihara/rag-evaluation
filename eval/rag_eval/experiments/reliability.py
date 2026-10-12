@@ -44,8 +44,8 @@ def run(samples: list[Sample], base_url: str, dataset: Path, run_name: str | Non
             "mean_latency": mean(r["latency"] for r in rows),
             # Skip NaN, which Ragas returns for faithfulness when an answer has no statements
             "faithfulness": mean(r["faithfulness"] for r in rows if not isnan(r["faithfulness"])),
-            "answer_relevance": mean(r["relevance"] for r in rows if not isnan(r["relevance"])),
-            "answer_correctness": mean(r["correctness"] for r in rows if not isnan(r["correctness"])),
+            "answer_relevance": mean(r["relevance"] for r in rows),
+            "answer_correctness": mean(r["correctness"] for r in rows),
         }
         print(f"mean\tprecision={metrics['context_precision']:.2f}\trecall={metrics['context_recall']:.2f}\tmrr={metrics['mrr']:.2f}\tlatency={metrics['mean_latency']:.2f}s\tfaithfulness={metrics['faithfulness']:.2f}\trelevance={metrics['answer_relevance']:.2f}\tcorrectness={metrics['answer_correctness']:.2f}")
         tracking.log_results(metrics, rows)
