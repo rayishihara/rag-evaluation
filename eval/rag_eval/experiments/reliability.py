@@ -1,14 +1,23 @@
+import os
+from math import isnan
 from pathlib import Path
 from statistics import mean
 
 from rag_eval import target, tracking
 from rag_eval.dataset import Sample
+from rag_eval.metrics.generation import answer_correctness, answer_relevance, faithfulness
 from rag_eval.metrics.operational import latency
 from rag_eval.metrics.retrieval import context_precision, context_recall, reciprocal_rank
 
 
 def run(samples: list[Sample], base_url: str, dataset: Path, run_name: str | None) -> None:
-    params = {"base_url": base_url, "dataset": dataset.name, "n_samples": len(samples)}
+    params = {
+        "base_url": base_url,
+        "dataset": dataset.name,
+        "n_samples": len(samples),
+        "judge_model": os.environ["JUDGE_MODEL"],
+        "embedding_model": os.environ["EMBEDDING_MODEL"],
+    }
     with tracking.start_run("reliability", run_name, params):
         rows = []
         for sample in samples:
@@ -23,13 +32,20 @@ def run(samples: list[Sample], base_url: str, dataset: Path, run_name: str | Non
                 "recall": context_recall(trace, sample),
                 "rr": reciprocal_rank(trace, sample),
                 "latency": latency(trace),
+                "faithfulness": faithfulness(trace, sample),
+                "relevance": answer_relevance(trace, sample),
+                "correctness": answer_correctness(trace, sample),
             })
-            print(f"{sample.id}\tprecision={rows[-1]['precision']:.2f}\trecall={rows[-1]['recall']:.2f}\trr={rows[-1]['rr']:.2f}\tlatency={rows[-1]['latency']:.2f}s")
+            print(f"{sample.id}\tprecision={rows[-1]['precision']:.2f}\trecall={rows[-1]['recall']:.2f}\trr={rows[-1]['rr']:.2f}\tlatency={rows[-1]['latency']:.2f}s\tfaithfulness={rows[-1]['faithfulness']:.2f}\trelevance={rows[-1]['relevance']:.2f}\tcorrectness={rows[-1]['correctness']:.2f}")
         metrics = {
             "context_precision": mean(r["precision"] for r in rows),
             "context_recall": mean(r["recall"] for r in rows),
             "mrr": mean(r["rr"] for r in rows),
             "mean_latency": mean(r["latency"] for r in rows),
+            # Skip NaN, which Ragas returns for faithfulness when an answer has no statements
+            "faithfulness": mean(r["faithfulness"] for r in rows if not isnan(r["faithfulness"])),
+            "answer_relevance": mean(r["relevance"] for r in rows if not isnan(r["relevance"])),
+            "answer_correctness": mean(r["correctness"] for r in rows if not isnan(r["correctness"])),
         }
-        print(f"mean\tprecision={metrics['context_precision']:.2f}\trecall={metrics['context_recall']:.2f}\tmrr={metrics['mrr']:.2f}\tlatency={metrics['mean_latency']:.2f}s")
+        print(f"mean\tprecision={metrics['context_precision']:.2f}\trecall={metrics['context_recall']:.2f}\tmrr={metrics['mrr']:.2f}\tlatency={metrics['mean_latency']:.2f}s\tfaithfulness={metrics['faithfulness']:.2f}\trelevance={metrics['answer_relevance']:.2f}\tcorrectness={metrics['answer_correctness']:.2f}")
         tracking.log_results(metrics, rows)
