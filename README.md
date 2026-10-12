@@ -4,52 +4,34 @@ A lightweight evaluation pipeline for a simple, mock RAG application.
 
 ## RAG pipeline
 
-A high-level picture of the system's architecture.
+A high-level architecture diagram:
 
-<img src="./assets/rag-system-architecture.png" alt="RAG system architecture diagram" width="600">
+<img src="./assets/rag-system-architecture.png" alt="RAG system architecture diagram" width="800">
+
+For a more technical overview, the app is deployed on AWS and Snowflake via CI/CD tools like Terraform and GitHub Actions. To simplify the infrastructure, Lambda gates every request - I've bundled the frontend asset and the FastAPI backend in a single Docker image which Lambda runs at invocation. When the user hits the `chat/` endpoint with a `POST`, it first embeds the prompt and searches for relavent chunks (retrieval), then the result is fed into the context of the LLM generator along with the original prompt (generation).
 
 ## Evaluation pipeline
 
-What does a good RAG pipeline look like? So far, I think there's five criteria to evaluate on: 
+A high-level architecture diagram:
 
-- Time - we want the end-to-end latency, from query to response, to be as little as possible
-- Cost - we want the cost per query to be as cheap as possible
-- Scalability - we want performance to hold up as document and query volumes grow
-- Consistency - we want similar queries to always produce similar answers
-- Reliability - can we trust the response? (this one is deliberately left vague)
+<img src="./assets/eval-pipeline-architecture.png" alt="Evaluation pipeline architecture diagram" width="800">
 
-Let's break down how each of them can be quantified.
+This project focuses on metrics that quantify RAG quality - other metrics like latency, cost, scalability, and consistency are out of scope for now. These metrics can be broken down into either retrieval metrics and generation metrics. 
 
-### Time & Cost
-
-Time and cost are easily measured once a traceability/observability system is in place.
-
-### Scalability
-
-See how time, cost, and quality varies as we increase document or query volume. There's also architectural considerations but that is out of scope for RAG evaluation.
-
-### Consistency
-
-Can be further broken down into
-
-- retrieval consistency
-- answer consistency
-- score variance
-
-### Reliability
-
-For retrieval metrics:
+Retrieval metrics are evaluated with plain functions:
 
 - context precision
 - context recall
 - mean reciprocal rank
 
-For generation metrics:
+Generation metrics are evaluated with Ragas:
 
 - faithfulness
 - answer relevance
 - answer correctness
 
-## RAG working snapshot
+Experiment runs are tracked and visualised through MLflow.
+
+## Working snapshot
 
 <img src="./assets/rag-working-example.png" alt="RAG working!" width="600">
